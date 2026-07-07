@@ -1,0 +1,6 @@
+{
+  "name": "AmreetJewels - Premium Artificial Jewellery",
+  "description": "A premium, high-fidelity Indian artificial jewellery eCommerce website inspired by luxury designs, complete with products, cart, wishlist, checkout, orders, admin panel, and an AI-powered Jewellery Stylist.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
