@@ -4,11 +4,25 @@ import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+
+let currentDir = '';
+
+try {
+  // If running in CommonJS (Render Production), __dirname exists natively
+  currentDir = __dirname;
+} catch (e) {
+  // If running in ESM (Local development), fall back to import.meta
+  currentDir = path.dirname(fileURLToPath(import.meta.url));
+}
+
+// Use currentDir wherever you need to point to your paths below
 
 async function startServer() {
   const app = express();
