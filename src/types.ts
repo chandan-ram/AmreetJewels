@@ -58,7 +58,7 @@ export interface Order {
   paymentMethod: 'UPI' | 'Razorpay' | 'Cashfree' | 'Cards' | 'NetBanking' | 'COD';
   items: CartItem[];
   totalAmount: number;
-  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+  status: 'Pending' | 'Paid' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
   createdAt: string;
   trackingId: string;
 }
