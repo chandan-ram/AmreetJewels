@@ -7,8 +7,13 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+
+// Safe check for both ESM (Local) and CommonJS (Render Production) environments
+const hasImportMeta = typeof import.meta !== 'undefined' && !!import.meta.url;
+const __filename = hasImportMeta ? fileURLToPath(import.meta.url) : (__filename || '');
+const __dirname = hasImportMeta ? path.dirname(__filename) : (__dirname || '');
 
 async function startServer() {
   const app = express();
