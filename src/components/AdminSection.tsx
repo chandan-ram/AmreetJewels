@@ -20,13 +20,15 @@ interface AdminSectionProps {
   onProductsUpdate: (newProducts: Product[]) => void;
   orders: Order[];
   onOrdersUpdate: (newOrders: Order[]) => void;
+  onAdminLogin?: () => void;
 }
 
 export default function AdminSection({
   products,
   onProductsUpdate,
   orders,
-  onOrdersUpdate
+  onOrdersUpdate,
+  onAdminLogin
 }: AdminSectionProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'coupons' | 'buyers'>('dashboard');
   const [selectedInspectionOrder, setSelectedInspectionOrder] = useState<Order | null>(null);
@@ -46,6 +48,9 @@ export default function AdminSection({
       setIsAuthenticated(true);
       sessionStorage.setItem('admin_authenticated', 'true');
       setLoginError('');
+      if (onAdminLogin) {
+        onAdminLogin();
+      }
     } else {
       setLoginError('Incorrect credentials. Please try again.');
     }
@@ -59,8 +64,9 @@ export default function AdminSection({
   // Stored state handlers
   const [coupons, setCoupons] = useState<Coupon[]>(() => getStoredCoupons());
 
-  // Form State for Adding Products
+  // Form State for Adding/Editing Products
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [newProduct, setNewProduct] = useState({
     title: '',
     price: '',
@@ -71,6 +77,7 @@ export default function AdminSection({
     color: COLORS_LIST[0] as any,
     occasion: OCCASIONS_LIST[0] as any,
     imageUrl: '',
+    additionalImagesUrl: '',
     stock: '50',
     sku: '',
     variantsInput: 'Standard'
@@ -114,44 +121,91 @@ export default function AdminSection({
   const COLORS = ['#C9A14A', '#1C1C1C', '#E2C279', '#D97706', '#059669', '#3B82F6', '#8B5CF6'];
 
   // Product actions
-  const handleAddProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProduct.title || !newProduct.price) return;
 
     const priceNum = Number(newProduct.price);
     const originalNum = newProduct.originalPrice ? Number(newProduct.originalPrice) : priceNum;
     const stockNum = Number(newProduct.stock) || 10;
-    const prodId = 'prod-' + (products.length + 1) + '-' + Math.floor(Math.random() * 100);
 
-    const variantsArray = newProduct.variantsInput
-      .split(',')
-      .map((name, i) => ({ id: `v-${prodId}-${i}`, name: name.trim(), stock: Math.floor(stockNum / 2) || stockNum }));
+    const additionalImagesList = newProduct.additionalImagesUrl
+      ? newProduct.additionalImagesUrl.split(',').map((url: string) => url.trim()).filter(Boolean)
+      : [];
 
-    const newlyCreated: Product = {
-      id: prodId,
-      title: newProduct.title,
-      description: newProduct.description || 'Premium artificial Indian jewellery accent.',
-      price: priceNum,
-      originalPrice: originalNum,
-      rating: 5.0,
-      reviewsCount: 0,
-      category: newProduct.category,
-      images: [
-        newProduct.imageUrl || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=600'
-      ],
-      tags: [newProduct.category, newProduct.color, newProduct.occasion],
-      variants: variantsArray,
-      sku: newProduct.sku || `KNK-${newProduct.category.slice(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`,
-      materials: newProduct.materials || 'Jewellery grade copper and hand-set crystals',
-      stock: stockNum,
-      occasion: newProduct.occasion,
-      color: newProduct.color,
-      isNewArrival: true
-    };
+    if (editingProductId) {
+      // Edit existing product
+      const updatedProducts = products.map(p => {
+        if (p.id === editingProductId) {
+          const variantsArray = newProduct.variantsInput
+            .split(',')
+            .map((name, i) => ({ 
+              id: `v-${editingProductId}-${i}`, 
+              name: name.trim(), 
+              stock: Math.floor(stockNum / 2) || stockNum 
+            }));
 
-    const updated = [newlyCreated, ...products];
-    saveProducts(updated);
-    onProductsUpdate(updated);
+          return {
+            ...p,
+            title: newProduct.title,
+            description: newProduct.description || 'Premium artificial Indian jewellery accent.',
+            price: priceNum,
+            originalPrice: originalNum,
+            category: newProduct.category,
+            images: [
+              newProduct.imageUrl || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=600',
+              ...additionalImagesList
+            ],
+            tags: [newProduct.category, newProduct.color, newProduct.occasion],
+            variants: variantsArray,
+            sku: newProduct.sku || p.sku,
+            materials: newProduct.materials || 'Jewellery grade copper and hand-set crystals',
+            stock: stockNum,
+            occasion: newProduct.occasion,
+            color: newProduct.color,
+          };
+        }
+        return p;
+      });
+
+      saveProducts(updatedProducts);
+      onProductsUpdate(updatedProducts);
+      setEditingProductId(null);
+    } else {
+      // Create new product
+      const prodId = 'prod-' + (products.length + 1) + '-' + Math.floor(Math.random() * 100);
+
+      const variantsArray = newProduct.variantsInput
+        .split(',')
+        .map((name, i) => ({ id: `v-${prodId}-${i}`, name: name.trim(), stock: Math.floor(stockNum / 2) || stockNum }));
+
+      const newlyCreated: Product = {
+        id: prodId,
+        title: newProduct.title,
+        description: newProduct.description || 'Premium artificial Indian jewellery accent.',
+        price: priceNum,
+        originalPrice: originalNum,
+        rating: 5.0,
+        reviewsCount: 0,
+        category: newProduct.category,
+        images: [
+          newProduct.imageUrl || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=600',
+          ...additionalImagesList
+        ],
+        tags: [newProduct.category, newProduct.color, newProduct.occasion],
+        variants: variantsArray,
+        sku: newProduct.sku || `KNK-${newProduct.category.slice(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`,
+        materials: newProduct.materials || 'Jewellery grade copper and hand-set crystals',
+        stock: stockNum,
+        occasion: newProduct.occasion,
+        color: newProduct.color,
+        isNewArrival: true
+      };
+
+      const updated = [newlyCreated, ...products];
+      saveProducts(updated);
+      onProductsUpdate(updated);
+    }
 
     // Reset Form
     setNewProduct({
@@ -164,6 +218,7 @@ export default function AdminSection({
       color: COLORS_LIST[0] as any,
       occasion: OCCASIONS_LIST[0] as any,
       imageUrl: '',
+      additionalImagesUrl: '',
       stock: '50',
       sku: '',
       variantsInput: 'Standard'
@@ -341,8 +396,8 @@ export default function AdminSection({
       {/* Admin Title Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gold/20 pb-6 mb-8 gap-4">
         <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal flex items-center gap-2">
-            AmreetJewels Control Panel
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal flex items-center gap-2 flex-wrap">
+            <span>AmreetJewels Control Panel</span>
             <span className="text-xs bg-gold/10 text-gold-dark px-2.5 py-1 rounded-sm uppercase tracking-widest font-semibold border border-gold/20">
               WooCommerce Admin
             </span>
@@ -351,41 +406,43 @@ export default function AdminSection({
             Analyze sales performance, restock inventory items, manage active discount vouchers, and fulfill custom Indian customer orders.
           </p>
         </div>
-        
-        {/* Tab Selection */}
-        <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
-          {[
-            { id: 'dashboard', label: 'Dashboard Overview' },
-            { id: 'products', label: 'Inventory Items' },
-            { id: 'orders', label: 'Customer Orders' },
-            { id: 'coupons', label: 'Discount Coupons' },
-            { id: 'buyers', label: 'Registered Buyers' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id as any);
-                if (tab.id === 'buyers') {
-                  setBuyers(getStoredUsers());
-                }
-              }}
-              className={`text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg border transition-all ${
-                activeTab === tab.id
-                  ? 'bg-charcoal text-gold border-charcoal shadow-sm'
-                  : 'bg-white border-gray-200 text-gray-500 hover:border-gold/30'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+
+        {/* Lock & Logout button nicely aligned at the top in the same charcoal/gold color theme */}
+        <button
+          onClick={handleLogout}
+          className="text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg border border-charcoal bg-charcoal hover:bg-black text-gold hover:text-white transition-all flex items-center gap-1.5 self-start md:self-auto shadow-sm"
+          title="Lock administrative panel and log out"
+        >
+          <span>Lock & Logout</span>
+        </button>
+      </div>
+      
+      {/* Tab Selection */}
+      <div className="flex flex-wrap gap-2 items-center w-full mb-8">
+        {[
+          { id: 'dashboard', label: 'Dashboard Overview' },
+          { id: 'products', label: 'Inventory Items' },
+          { id: 'orders', label: 'Customer Orders' },
+          { id: 'coupons', label: 'Discount Coupons' },
+          { id: 'buyers', label: 'Registered Buyers' }
+        ].map(tab => (
           <button
-            onClick={handleLogout}
-            className="text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 transition-all flex items-center gap-1.5 md:ml-auto"
-            title="Lock administrative panel and log out"
+            key={tab.id}
+            onClick={() => {
+              setActiveTab(tab.id as any);
+              if (tab.id === 'buyers') {
+                setBuyers(getStoredUsers());
+              }
+            }}
+            className={`text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg border transition-all ${
+              activeTab === tab.id
+                ? 'bg-charcoal text-gold border-charcoal shadow-sm'
+                : 'bg-white border-gray-200 text-gray-500 hover:border-gold/30'
+            }`}
           >
-            <span>Lock & Logout</span>
+            {tab.label}
           </button>
-        </div>
+        ))}
       </div>
 
       {/* DASHBOARD TAB */}
@@ -518,7 +575,47 @@ export default function AdminSection({
               </button>
 
               <button
-                onClick={() => setShowAddForm(!showAddForm)}
+                onClick={() => {
+                  if (showAddForm && editingProductId) {
+                    // Just reset the form rather than closing it
+                    setEditingProductId(null);
+                    setNewProduct({
+                      title: '',
+                      price: '',
+                      originalPrice: '',
+                      category: CATEGORIES_LIST[0],
+                      description: '',
+                      materials: '',
+                      color: COLORS_LIST[0] as any,
+                      occasion: OCCASIONS_LIST[0] as any,
+                      imageUrl: '',
+                      additionalImagesUrl: '',
+                      stock: '50',
+                      sku: '',
+                      variantsInput: 'Standard'
+                    });
+                  } else {
+                    if (!showAddForm) {
+                      setEditingProductId(null);
+                      setNewProduct({
+                        title: '',
+                        price: '',
+                        originalPrice: '',
+                        category: CATEGORIES_LIST[0],
+                        description: '',
+                        materials: '',
+                        color: COLORS_LIST[0] as any,
+                        occasion: OCCASIONS_LIST[0] as any,
+                        imageUrl: '',
+                        additionalImagesUrl: '',
+                        stock: '50',
+                        sku: '',
+                        variantsInput: 'Standard'
+                      });
+                    }
+                    setShowAddForm(!showAddForm);
+                  }
+                }}
                 className="bg-gold hover:bg-gold-dark text-white font-bold px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider flex items-center space-x-1.5 transition-colors"
               >
                 <Plus size={15} />
@@ -530,8 +627,10 @@ export default function AdminSection({
           {/* New Product Form popup */}
           {showAddForm && (
             <div className="bg-beige-soft border border-gold/25 p-6 rounded-2xl animate-in slide-in-from-top-4 duration-300">
-              <h4 className="font-serif text-lg font-bold text-charcoal mb-4">Add Premium Jewellery Asset</h4>
-              <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-medium">
+              <h4 className="font-serif text-lg font-bold text-charcoal mb-4">
+                {editingProductId ? `Edit Premium Jewellery Piece (ID: ${editingProductId})` : 'Add Premium Jewellery Asset'}
+              </h4>
+              <form onSubmit={handleSaveProduct} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-medium">
                 <div>
                   <label className="block text-gray-600 mb-1">Product Title*</label>
                   <input
@@ -611,6 +710,16 @@ export default function AdminSection({
                   />
                 </div>
                 <div>
+                  <label className="block text-gray-600 mb-1">Additional Gallery Image URLs (comma-separated)</label>
+                  <input
+                    type="text"
+                    value={newProduct.additionalImagesUrl}
+                    onChange={(e) => setNewProduct({ ...newProduct, additionalImagesUrl: e.target.value })}
+                    placeholder="https://image1.jpg, https://image2.jpg"
+                    className="w-full bg-white p-3 border border-gray-200 rounded-lg focus:outline-hidden"
+                  />
+                </div>
+                <div>
                   <label className="block text-gray-600 mb-1">Total Stock</label>
                   <input
                     type="number"
@@ -643,7 +752,25 @@ export default function AdminSection({
                 <div className="md:col-span-3 flex justify-end space-x-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowAddForm(false)}
+                    onClick={() => {
+                      setEditingProductId(null);
+                      setNewProduct({
+                        title: '',
+                        price: '',
+                        originalPrice: '',
+                        category: CATEGORIES_LIST[0],
+                        description: '',
+                        materials: '',
+                        color: COLORS_LIST[0] as any,
+                        occasion: OCCASIONS_LIST[0] as any,
+                        imageUrl: '',
+                        additionalImagesUrl: '',
+                        stock: '50',
+                        sku: '',
+                        variantsInput: 'Standard'
+                      });
+                      setShowAddForm(false);
+                    }}
                     className="px-4 py-2 border border-gray-200 text-gray-500 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     Cancel
@@ -652,7 +779,7 @@ export default function AdminSection({
                     type="submit"
                     className="bg-gold text-white px-6 py-2 rounded-lg hover:bg-gold-dark transition-colors font-bold"
                   >
-                    Fulfill to Catalog
+                    {editingProductId ? 'Update Piece' : 'Fulfill to Catalog'}
                   </button>
                 </div>
               </form>
@@ -701,13 +828,42 @@ export default function AdminSection({
                         </span>
                       </td>
                       <td className="p-4 text-center">
-                        <button
-                          onClick={() => handleDeleteProduct(product.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                          title="Delete Product"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center justify-center space-x-1">
+                          <button
+                            onClick={() => {
+                              setEditingProductId(product.id);
+                              setNewProduct({
+                                title: product.title,
+                                price: String(product.price),
+                                originalPrice: String(product.originalPrice),
+                                category: product.category,
+                                description: product.description || '',
+                                materials: product.materials || '',
+                                color: product.color,
+                                occasion: product.occasion,
+                                imageUrl: product.images[0] || '',
+                                additionalImagesUrl: product.images.slice(1).join(', '),
+                                stock: String(product.stock),
+                                sku: product.sku || '',
+                                variantsInput: product.variants ? product.variants.map(v => v.name).join(', ') : 'Standard'
+                              });
+                              setShowAddForm(true);
+                              // Smooth scroll to top of products tab where form is located
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-gold hover:bg-gold/10 rounded-md transition-colors"
+                            title="Edit Product"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                            title="Delete Product"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

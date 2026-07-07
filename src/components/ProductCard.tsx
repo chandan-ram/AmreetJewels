@@ -1,5 +1,5 @@
-import React from 'react';
-import { Heart, Eye, ShoppingCart, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { Heart, Eye, ShoppingCart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
 
 interface ProductCardProps {
@@ -19,9 +19,45 @@ export default function ProductCard({
   isWishlisted,
   onAddToCart
 }: ProductCardProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
   const discountPercent = Math.round(
     ((product.originalPrice - product.price) / product.originalPrice) * 100
   );
+
+  const nextImage = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (product.images && product.images.length > 1) {
+      setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
+    }
+  };
+
+  const prevImage = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (product.images && product.images.length > 1) {
+      setCurrentImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        nextImage(e);
+      } else {
+        prevImage(e);
+      }
+    }
+    setTouchStartX(null);
+  };
 
   return (
     <div className="group relative bg-white border border-border-warm rounded-xs overflow-hidden hover:shadow-lg hover:border-gold/40 transition-all duration-300 flex flex-col justify-between">
@@ -76,21 +112,56 @@ export default function ProductCard({
       {/* Image Gallery Container */}
       <div 
         onClick={() => onProductClick(product)}
-        className="cursor-pointer relative pt-[100%] overflow-hidden bg-gray-50 border-b border-border-warm"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="cursor-pointer relative pt-[100%] overflow-hidden bg-gray-50 border-b border-border-warm select-none"
       >
         <img
-          src={product.images[0]}
+          src={product.images[currentImageIndex] || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=600'}
           alt={product.title}
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-103 transition-transform duration-700 ease-out"
           loading="lazy"
         />
-        {product.images[1] && (
-          <img
-            src={product.images[1]}
-            alt={product.title}
-            className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-out"
-            loading="lazy"
-          />
+
+        {/* Hover Navigation Controls */}
+        {product.images && product.images.length > 1 && (
+          <>
+            {/* Left Arrow */}
+            <button
+              onClick={prevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-charcoal p-1.5 rounded-full shadow-xs transition-all opacity-0 group-hover:opacity-100 z-10 hover:scale-110 flex items-center justify-center border border-gold/10"
+              title="Previous Image"
+            >
+              <ChevronLeft size={13} className="stroke-[2.5]" />
+            </button>
+
+            {/* Right Arrow */}
+            <button
+              onClick={nextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-charcoal p-1.5 rounded-full shadow-xs transition-all opacity-0 group-hover:opacity-100 z-10 hover:scale-110 flex items-center justify-center border border-gold/10"
+              title="Next Image"
+            >
+              <ChevronRight size={13} className="stroke-[2.5]" />
+            </button>
+
+            {/* Dot Indicators */}
+            <div className="absolute bottom-2.5 inset-x-0 flex justify-center space-x-1.5 z-10">
+              {product.images.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex(idx);
+                  }}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${
+                    idx === currentImageIndex 
+                      ? 'bg-gold w-3.5' 
+                      : 'bg-white/60 hover:bg-white'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
         )}
         <div className="absolute bottom-0 inset-x-0 h-10 bg-linear-to-t from-black/10 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>

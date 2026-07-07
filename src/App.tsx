@@ -678,7 +678,10 @@ export default function App() {
           <AccountSection 
             onNavigate={handleNavigate}
             currentUser={currentUser}
-            onLogin={(user) => setCurrentUser(user)}
+            onLogin={(user) => {
+              setCurrentUser(user);
+              sessionStorage.removeItem('admin_authenticated');
+            }}
             onLogout={() => setCurrentUser(null)}
             initialTab={accountTab}
           />
@@ -691,6 +694,9 @@ export default function App() {
             onProductsUpdate={(updated) => setProducts(updated)}
             orders={orders}
             onOrdersUpdate={(updated) => setOrders(updated)}
+            onAdminLogin={() => {
+              setCurrentUser(null);
+            }}
           />
         )}
       </main>
