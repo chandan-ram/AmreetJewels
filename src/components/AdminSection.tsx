@@ -5,7 +5,8 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, ShoppingCart, Users, Tag, Package, Plus, Edit2, CheckCircle, 
-  AlertCircle, ArrowRight, Trash2, ShieldAlert, UploadCloud, RefreshCw
+  AlertCircle, ArrowRight, Trash2, ShieldAlert, UploadCloud, RefreshCw,
+  Eye, MapPin, Mail, Phone, Calendar, X
 } from 'lucide-react';
 import { Product, Order, Coupon } from '../types';
 import { 
@@ -28,6 +29,31 @@ export default function AdminSection({
   onOrdersUpdate
 }: AdminSectionProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'coupons'>('dashboard');
+  const [selectedInspectionOrder, setSelectedInspectionOrder] = useState<Order | null>(null);
+
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return sessionStorage.getItem('admin_authenticated') === 'true';
+  });
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username.trim() === 'admin' && (password === 'password' || password === 'amreet123' || password === 'amreetjewels2026')) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('admin_authenticated', 'true');
+      setLoginError('');
+    } else {
+      setLoginError('Incorrect credentials. Please try again.');
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin_authenticated');
+    setIsAuthenticated(false);
+  };
 
   // Stored state handlers
   const [coupons, setCoupons] = useState<Coupon[]>(() => getStoredCoupons());
@@ -249,6 +275,66 @@ export default function AdminSection({
     setCoupons(updated);
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-md mx-auto my-12 px-4 font-sans">
+        <div className="bg-white border-2 border-gold/30 rounded-2xl p-8 shadow-xl text-center space-y-6 animate-in fade-in duration-300">
+          <div className="flex justify-center">
+            <div className="p-4 bg-gold/10 text-gold rounded-full">
+              <ShieldAlert size={32} />
+            </div>
+          </div>
+          <div>
+            <h2 className="font-serif text-2xl font-bold text-charcoal">AmreetJewels Control Panel</h2>
+            <p className="text-xs text-gray-400 mt-1">Please enter your administrative credentials to gain control access.</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4 text-left">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-charcoal mb-1.5">Username</label>
+              <input
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="e.g. admin"
+                className="w-full bg-beige-soft/50 p-3 border border-gray-200 rounded-lg text-xs font-semibold focus:outline-hidden focus:border-gold transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-charcoal mb-1.5">Password</label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-beige-soft/50 p-3 border border-gray-200 rounded-lg text-xs font-semibold focus:outline-hidden focus:border-gold transition-all"
+              />
+            </div>
+
+            {loginError && (
+              <p className="text-[11px] text-red-500 font-bold text-center">{loginError}</p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-charcoal text-gold font-bold py-3 px-6 rounded-lg text-xs uppercase tracking-widest hover:bg-black transition-all shadow-md"
+            >
+              Authorize Secure Connection
+            </button>
+          </form>
+
+          <div className="border-t border-gold/15 pt-4 text-[10px] text-gray-400 leading-relaxed font-sans">
+            <p className="font-bold uppercase tracking-widest text-gold mb-1">Access Guidelines</p>
+            <p>Admin panel URL synchronized at <code className="bg-gray-100 px-1 py-0.5 rounded text-[9px]">/admin</code>.</p>
+            <p className="mt-1">Use <code className="bg-gray-100 px-1 py-0.5 rounded text-[9px] text-charcoal font-bold">Username: admin</code> & <code className="bg-gray-100 px-1 py-0.5 rounded text-[9px] text-charcoal font-bold">Password: amreet123</code> to log in.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 font-sans">
       {/* Admin Title Banner */}
@@ -264,9 +350,9 @@ export default function AdminSection({
             Analyze sales performance, restock inventory items, manage active discount vouchers, and fulfill custom Indian customer orders.
           </p>
         </div>
-
+        
         {/* Tab Selection */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
           {[
             { id: 'dashboard', label: 'Dashboard Overview' },
             { id: 'products', label: 'Inventory Items' },
@@ -285,6 +371,13 @@ export default function AdminSection({
               {tab.label}
             </button>
           ))}
+          <button
+            onClick={handleLogout}
+            className="text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 transition-all flex items-center gap-1.5 md:ml-auto"
+            title="Lock administrative panel and log out"
+          >
+            <span>Lock & Logout</span>
+          </button>
         </div>
       </div>
 
@@ -643,6 +736,7 @@ export default function AdminSection({
                       <th className="p-4 font-bold">Payment Method</th>
                       <th className="p-4 font-bold">Courier Tracking ID</th>
                       <th className="p-4 font-bold">Milestone Status</th>
+                      <th className="p-4 font-bold text-center">Inspect</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-charcoal font-medium">
@@ -674,6 +768,16 @@ export default function AdminSection({
                             <option value="Delivered">Delivered</option>
                             <option value="Cancelled">Cancelled</option>
                           </select>
+                        </td>
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => setSelectedInspectionOrder(order)}
+                            className="bg-gold/10 text-gold-dark hover:bg-gold hover:text-white px-2.5 py-1.5 rounded-md font-bold transition-all text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 mx-auto border border-gold/25"
+                            title="Inspect detailed buyer and item layout"
+                          >
+                            <Eye size={12} />
+                            <span>Invoice</span>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -810,6 +914,155 @@ export default function AdminSection({
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DETAILED INSPECTION MODAL FOR CUSTOMER INVOICES */}
+      {selectedInspectionOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-gold/20 overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="bg-charcoal text-white px-6 py-4 flex items-center justify-between border-b border-gold/20">
+              <div>
+                <h3 className="font-serif text-lg font-bold text-gold flex items-center gap-1.5">
+                  <Package size={20} />
+                  <span>Invoice Detail • {selectedInspectionOrder.id}</span>
+                </h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">Placed on {new Date(selectedInspectionOrder.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+              </div>
+              <button
+                onClick={() => setSelectedInspectionOrder(null)}
+                className="text-gray-400 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Content (Scrollable) */}
+            <div className="p-6 overflow-y-auto space-y-6 text-xs text-charcoal">
+              {/* Row 1: Customer Profile Details */}
+              <div className="bg-[#F9F5F0] border border-gold/15 rounded-xl p-4 space-y-3">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-gold-dark border-b border-gold/10 pb-1.5">Buyer Contact & Shipping Logistics</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-gray-400 font-semibold">Customer Full Name</p>
+                    <p className="font-bold text-sm text-charcoal">{selectedInspectionOrder.customerName}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-gray-400 font-semibold">Contact Details</p>
+                    <p className="font-bold">{selectedInspectionOrder.phone}</p>
+                    <p className="text-gray-500">{selectedInspectionOrder.email}</p>
+                  </div>
+                  <div className="sm:col-span-2 space-y-1">
+                    <p className="text-gray-400 font-semibold flex items-center gap-1">
+                      <MapPin size={12} className="text-gold" />
+                      <span>Delivery Shipping Address</span>
+                    </p>
+                    <p className="font-medium text-charcoal leading-relaxed bg-white p-2.5 rounded-md border border-gray-100 shadow-3xs">
+                      {selectedInspectionOrder.address}, {selectedInspectionOrder.city}, {selectedInspectionOrder.state} - <span className="font-bold font-mono">{selectedInspectionOrder.zip}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 2: Itemized Breakdown */}
+              <div className="space-y-2">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-charcoal border-b border-gray-200 pb-1.5 flex justify-between items-center">
+                  <span>Purchased Treasures ({selectedInspectionOrder.items?.reduce((sum, item) => sum + item.quantity, 0) || 0})</span>
+                  <span className="font-mono text-[10px] text-gray-400">GST-Inclusive Pricing</span>
+                </h4>
+                <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden bg-white">
+                  {selectedInspectionOrder.items?.map((item, idx) => (
+                    <div key={idx} className="flex p-3 items-center justify-between gap-4">
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={item.product.images[0]}
+                          alt={item.product.title}
+                          className="w-10 h-10 object-cover rounded-md border border-gold/10 shrink-0"
+                        />
+                        <div>
+                          <p className="font-bold text-charcoal text-[11px]">{item.product.title}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">Shade/Variant: <span className="font-semibold text-charcoal">{item.selectedVariant}</span></p>
+                          <p className="text-[10px] text-gray-400">SKU Code: <span className="font-mono">{item.product.sku}</span></p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-bold">₹{item.product.price} <span className="text-[10px] font-medium text-gray-400">x {item.quantity}</span></p>
+                        <p className="font-bold text-gold-dark mt-0.5">₹{item.product.price * item.quantity}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Row 3: Billing Summary & Payment Meta */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="border border-gray-100 rounded-xl p-4 bg-white space-y-2">
+                  <h4 className="font-bold text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-100 pb-1.5">Payment & Logistics Code</h4>
+                  <div className="space-y-1.5">
+                    <p className="flex justify-between">
+                      <span className="text-gray-400">Method</span>
+                      <span className="font-bold uppercase text-charcoal">{selectedInspectionOrder.paymentMethod}</span>
+                    </p>
+                    <p className="flex justify-between">
+                      <span className="text-gray-400">GSTIN</span>
+                      <span className="font-bold font-mono text-charcoal">{selectedInspectionOrder.gstNumber || 'None Registered'}</span>
+                    </p>
+                    <p className="flex justify-between">
+                      <span className="text-gray-400">Courier Tracking</span>
+                      <span className="font-mono text-gold-dark font-bold">{selectedInspectionOrder.trackingId}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border border-gold/10 rounded-xl p-4 bg-[#FDFBF7] space-y-2 font-medium">
+                  <h4 className="font-bold text-[11px] uppercase tracking-wider text-gold-dark border-b border-gold/10 pb-1.5">Order Invoice Valuation</h4>
+                  <div className="space-y-1.5 text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Total Value</span>
+                      <span className="font-bold text-charcoal">₹{selectedInspectionOrder.totalAmount}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span>India Priority Delivery</span>
+                      <span className="text-emerald-600 font-bold">FREE (Fully Insured)</span>
+                    </div>
+                    <div className="border-t border-gold/10 pt-1.5 flex justify-between text-charcoal text-sm font-bold">
+                      <span className="font-serif">Net Paid Bill</span>
+                      <span className="text-gold-dark">₹{selectedInspectionOrder.totalAmount}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-beige-soft/50 px-6 py-4 border-t border-gold/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-gray-400">Milestone Status:</span>
+                <select
+                  value={selectedInspectionOrder.status}
+                  onChange={(e) => {
+                    handleUpdateOrderStatus(selectedInspectionOrder.id, e.target.value as any);
+                    // Live update selected order too
+                    setSelectedInspectionOrder(prev => prev ? { ...prev, status: e.target.value as any } : null);
+                  }}
+                  className="bg-white border border-gold/20 rounded-md p-1.5 text-xs font-bold text-charcoal focus:outline-hidden shadow-xs"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Processing">Processing</option>
+                  <option value="Shipped">Shipped (Priority BlueDart)</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+              <button
+                onClick={() => setSelectedInspectionOrder(null)}
+                className="bg-charcoal hover:bg-black text-white px-5 py-2 rounded-lg font-bold uppercase tracking-wider text-[10px] transition-all w-full sm:w-auto text-center"
+              >
+                Close Fulfill Check
+              </button>
             </div>
           </div>
         </div>

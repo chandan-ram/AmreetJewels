@@ -52,6 +52,20 @@ export default function App() {
     setWishlist(getStoredWishlist());
     setOrders(getStoredOrders());
 
+    // Check URL pathname for routes (e.g. /admin, /track, /shop, /checkout)
+    const pathname = window.location.pathname;
+    if (pathname === '/admin') {
+      setActivePage('admin');
+    } else if (pathname === '/track') {
+      setActivePage('track');
+    } else if (pathname === '/shop') {
+      setActivePage('shop');
+    } else if (pathname === '/checkout') {
+      setActivePage('checkout');
+    } else {
+      setActivePage('home');
+    }
+
     // Check for custom url parameters (e.g. for tracking ID redirect)
     const urlParams = new URLSearchParams(window.location.search);
     const trackId = urlParams.get('trackId');
@@ -59,6 +73,26 @@ export default function App() {
       setInitialTrackingId(trackId);
       setActivePage('track');
     }
+  }, []);
+
+  // Listen to popstate for browser back/forward routing
+  useEffect(() => {
+    const handlePopState = () => {
+      const pathname = window.location.pathname;
+      if (pathname === '/admin') {
+        setActivePage('admin');
+      } else if (pathname === '/track') {
+        setActivePage('track');
+      } else if (pathname === '/shop') {
+        setActivePage('shop');
+      } else if (pathname === '/checkout') {
+        setActivePage('checkout');
+      } else {
+        setActivePage('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   // Sync state functions
@@ -126,12 +160,16 @@ export default function App() {
       const trackingId = pageString.split('=')[1];
       setInitialTrackingId(trackingId);
       setActivePage('track');
+      window.history.pushState(null, '', '/track?trackId=' + trackingId);
     } else if (pageString.startsWith('shop?category=')) {
       const categoryName = decodeURIComponent(pageString.split('=')[1]);
       setSelectedCategory(categoryName);
       setActivePage('shop');
+      window.history.pushState(null, '', '/shop?category=' + encodeURIComponent(categoryName));
     } else {
       setActivePage(pageString as any);
+      const urlPath = pageString === 'home' ? '/' : '/' + pageString;
+      window.history.pushState(null, '', urlPath);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
