@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Heart, ShoppingBag, User, Package, Settings, Sparkles, Menu, X, ArrowRight } from 'lucide-react';
-import { Product } from '../types';
+import { Search, Heart, ShoppingBag, User, Package, Settings, Sparkles, Menu, X, ArrowRight, LogOut } from 'lucide-react';
+import { Product, User as UserType } from '../types';
 
 interface HeaderProps {
   cartCount: number;
@@ -10,6 +10,8 @@ interface HeaderProps {
   products: Product[];
   onProductClick: (product: Product) => void;
   onOpenCart: () => void;
+  currentUser?: UserType | null;
+  onLogout?: () => void;
 }
 
 export default function Header({
@@ -19,12 +21,15 @@ export default function Header({
   onNavigate,
   products,
   onProductClick,
-  onOpenCart
+  onOpenCart,
+  currentUser,
+  onLogout
 }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -221,19 +226,78 @@ export default function Header({
             )}
           </button>
 
-          {/* Admin Panel Link */}
-          <button
-            onClick={() => onNavigate('admin')}
-            className={`p-2 rounded-full hover:bg-beige-soft text-charcoal hover:text-gold transition-all relative group ${
-              currentPage === 'admin' ? 'text-gold' : ''
-            }`}
-            title="Admin Dashboard"
-          >
-            <Settings size={20} />
-            <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-charcoal text-white text-[10px] px-2 py-1 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-md">
-              Admin Portal
-            </span>
-          </button>
+          {/* Settings & User Actions Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                if (currentUser) {
+                  setShowSettingsDropdown(!showSettingsDropdown);
+                } else {
+                  onNavigate('account');
+                }
+              }}
+              className={`p-2 rounded-full hover:bg-beige-soft text-charcoal hover:text-gold transition-all relative group ${
+                showSettingsDropdown ? 'text-gold' : ''
+              }`}
+              title="Settings"
+            >
+              <Settings size={20} />
+              <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-charcoal text-white text-[10px] px-2 py-1 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-md">
+                Settings
+              </span>
+            </button>
+
+            {showSettingsDropdown && currentUser && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowSettingsDropdown(false)} />
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gold/15 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <p className="text-[10px] uppercase font-bold text-gold tracking-widest font-sans">Settings</p>
+                    <p className="text-xs font-bold text-charcoal truncate mt-0.5">{currentUser.name}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      onNavigate('account');
+                      setShowSettingsDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs hover:bg-beige-soft text-charcoal font-semibold transition-all"
+                  >
+                    My Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      onNavigate('orders');
+                      setShowSettingsDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs hover:bg-beige-soft text-charcoal font-semibold transition-all"
+                  >
+                    My Orders
+                  </button>
+                  <button
+                    onClick={() => {
+                      onNavigate('track');
+                      setShowSettingsDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs hover:bg-beige-soft text-charcoal font-semibold transition-all"
+                  >
+                    Track Orders
+                  </button>
+                  <div className="border-t border-gray-100 my-1"></div>
+                  <button
+                    onClick={() => {
+                      if (onLogout) onLogout();
+                      setShowSettingsDropdown(false);
+                      onNavigate('account');
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs hover:bg-red-50 text-red-600 font-bold transition-all flex items-center gap-1.5"
+                  >
+                    <LogOut size={13} />
+                    <span>Log Out</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -296,6 +360,27 @@ export default function Header({
                   <Search size={18} />
                 </button>
               </form>
+
+              {/* Mobile Account Welcome Greeting */}
+              <div 
+                onClick={() => {
+                  onNavigate('account');
+                  setMobileMenuOpen(false);
+                }}
+                className="bg-white border border-gold/15 p-4 rounded-2xl flex items-center space-x-3 cursor-pointer hover:bg-gold/5 transition-all"
+              >
+                <div className="p-2.5 bg-gold/10 text-gold-dark rounded-full">
+                  <User size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-charcoal">
+                    {currentUser ? `Namaste, ${currentUser.name}` : 'Welcome Guest'}
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    {currentUser ? 'Manage orders & profile' : 'Sign in / Create Account'}
+                  </p>
+                </div>
+              </div>
 
               {/* Mobile Navigation Links */}
               <div className="flex flex-col space-y-4">

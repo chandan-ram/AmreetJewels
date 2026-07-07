@@ -1,4 +1,4 @@
-import { Product, CartItem, Order, Coupon, Review } from '../types';
+import { Product, CartItem, Order, Coupon, Review, User } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_COUPONS } from '../data/initialData';
 
 // LocalStorage Keys
@@ -8,7 +8,9 @@ const KEYS = {
   WISHLIST: 'amreetjewels_wishlist',
   ORDERS: 'amreetjewels_orders',
   COUPONS: 'amreetjewels_coupons',
-  REVIEWS: 'amreetjewels_reviews'
+  REVIEWS: 'amreetjewels_reviews',
+  USERS: 'amreetjewels_users',
+  CURRENT_USER: 'amreetjewels_current_user'
 };
 
 export function getStoredProducts(): Product[] {
@@ -135,4 +137,31 @@ export function addReview(review: Review) {
   const reviews = getStoredReviews();
   reviews.unshift(review);
   saveReviews(reviews);
+}
+
+// User-specific Helpers
+export function getStoredUsers(): User[] {
+  const data = localStorage.getItem(KEYS.USERS);
+  return data ? JSON.parse(data) : [];
+}
+
+export function saveUsers(users: User[]) {
+  localStorage.setItem(KEYS.USERS, JSON.stringify(users));
+}
+
+export function getCurrentUser(): User | null {
+  const data = localStorage.getItem(KEYS.CURRENT_USER);
+  return data ? JSON.parse(data) : null;
+}
+
+export function setCurrentUser(user: User | null) {
+  if (user) {
+    localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(KEYS.CURRENT_USER);
+  }
+}
+
+export function logoutCurrentUser() {
+  localStorage.removeItem(KEYS.CURRENT_USER);
 }

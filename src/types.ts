@@ -46,6 +46,7 @@ export interface Review {
 
 export interface Order {
   id: string;
+  userId?: string; // Optional user identifier
   customerName: string;
   email: string;
   phone: string;
@@ -60,6 +61,19 @@ export interface Order {
   status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
   createdAt: string;
   trackingId: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  password?: string; // Store password (for local simulation/convenience)
+  createdAt: string;
 }
 
 export interface Coupon {

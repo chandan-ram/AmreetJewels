@@ -9,20 +9,24 @@ import QuickViewModal from './components/QuickViewModal';
 import CheckoutSection from './components/CheckoutSection';
 import TrackOrderSection from './components/TrackOrderSection';
 import AdminSection from './components/AdminSection';
+import AccountSection from './components/AccountSection';
 import AISearchAdvisor from './components/AISearchAdvisor';
 import Footer from './components/Footer';
-import { Product, CartItem, Order, Coupon } from './types';
+import { Product, CartItem, Order, Coupon, User } from './types';
 import { 
   getStoredProducts, saveProducts, 
   getStoredCart, saveCart, 
   getStoredWishlist, saveWishlist, 
-  getStoredOrders, saveOrders 
+  getStoredOrders, saveOrders,
+  getCurrentUser
 } from './lib/storage';
 
 export default function App() {
   // Navigation & Page State
-  const [activePage, setActivePage] = useState<'home' | 'shop' | 'track' | 'checkout' | 'admin'>('home');
+  const [activePage, setActivePage] = useState<'home' | 'shop' | 'track' | 'checkout' | 'admin' | 'account'>('home');
   const [initialTrackingId, setInitialTrackingId] = useState('');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [accountTab, setAccountTab] = useState<'profile' | 'orders'>('profile');
 
   // Products and Database State
   const [products, setProducts] = useState<Product[]>([]);
@@ -51,8 +55,9 @@ export default function App() {
     setCart(getStoredCart());
     setWishlist(getStoredWishlist());
     setOrders(getStoredOrders());
+    setCurrentUser(getCurrentUser());
 
-    // Check URL pathname for routes (e.g. /admin, /track, /shop, /checkout)
+    // Check URL pathname for routes (e.g. /admin, /track, /shop, /checkout, /account)
     const pathname = window.location.pathname;
     if (pathname === '/admin') {
       setActivePage('admin');
@@ -62,6 +67,8 @@ export default function App() {
       setActivePage('shop');
     } else if (pathname === '/checkout') {
       setActivePage('checkout');
+    } else if (pathname === '/account') {
+      setActivePage('account');
     } else {
       setActivePage('home');
     }
@@ -87,6 +94,8 @@ export default function App() {
         setActivePage('shop');
       } else if (pathname === '/checkout') {
         setActivePage('checkout');
+      } else if (pathname === '/account') {
+        setActivePage('account');
       } else {
         setActivePage('home');
       }
@@ -166,6 +175,14 @@ export default function App() {
       setSelectedCategory(categoryName);
       setActivePage('shop');
       window.history.pushState(null, '', '/shop?category=' + encodeURIComponent(categoryName));
+    } else if (pageString === 'account') {
+      setActivePage('account');
+      setAccountTab('profile');
+      window.history.pushState(null, '', '/account');
+    } else if (pageString === 'orders') {
+      setActivePage('account');
+      setAccountTab('orders');
+      window.history.pushState(null, '', '/account');
     } else {
       setActivePage(pageString as any);
       const urlPath = pageString === 'home' ? '/' : '/' + pageString;
@@ -217,6 +234,8 @@ export default function App() {
         products={products}
         onProductClick={(p) => setSelectedQuickViewProduct(p)}
         onOpenCart={() => setIsCartOpen(true)}
+        currentUser={currentUser}
+        onLogout={() => setCurrentUser(null)}
       />
 
       {/* RENDER PAGES DYNAMICALLY */}
@@ -640,6 +659,7 @@ export default function App() {
           <CheckoutSection 
             cart={cart}
             onNavigate={handleNavigate}
+            currentUser={currentUser}
             onOrderPlaced={(order) => {
               // Append to order lists instantly
               setOrders(prev => [order, ...prev]);
@@ -651,6 +671,17 @@ export default function App() {
         {/* LOGISTICS TRACK ORDER PAGE */}
         {activePage === 'track' && (
           <TrackOrderSection initialTrackingId={initialTrackingId} />
+        )}
+
+        {/* CUSTOMER PORTAL & ACCOUNT SECTION */}
+        {activePage === 'account' && (
+          <AccountSection 
+            onNavigate={handleNavigate}
+            currentUser={currentUser}
+            onLogin={(user) => setCurrentUser(user)}
+            onLogout={() => setCurrentUser(null)}
+            initialTab={accountTab}
+          />
         )}
 
         {/* WOOCOMMERCE ADMIN PANEL PAGE */}

@@ -235,6 +235,12 @@ Prices listed are in Indian Rupees (₹) and include standard GST charges. We re
       <div className="bg-[#1A1A1A] py-6 text-center text-[10px] text-gray-400 font-sans tracking-widest uppercase">
         <p>© {new Date().getFullYear()} AMREET JEWELS ROYAL JEWELLERY PVT. LTD. ALL RIGHTS RESERVED.</p>
         <p className="mt-1 text-gray-500 normal-case tracking-normal">Simulated premium eCommerce demo inspired by Indian boutique standards. Protected by Razorpay secure checkout protocols.</p>
+        <button
+          onClick={() => onNavigate('admin')}
+          className="mt-4 inline-block text-[9px] text-gray-600 hover:text-gold transition-all tracking-wider uppercase font-bold hover:underline"
+        >
+          Staff & Admin Login
+        </button>
       </div>
 
       {/* FLOATING GENERAL WHATSAPP BUTTON */}

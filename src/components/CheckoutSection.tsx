@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Tag, CreditCard, ShieldCheck, HelpCircle, ArrowLeft, CheckCircle } from 'lucide-react';
-import { CartItem, Order, Coupon } from '../types';
+import { CartItem, Order, Coupon, User } from '../types';
 import { getStoredCoupons, addOrder } from '../lib/storage';
 
 interface CheckoutSectionProps {
@@ -8,13 +8,15 @@ interface CheckoutSectionProps {
   onOrderPlaced: (order: Order) => void;
   onNavigate: (page: string) => void;
   onClearCart: () => void;
+  currentUser?: User | null;
 }
 
 export default function CheckoutSection({
   cart,
   onOrderPlaced,
   onNavigate,
-  onClearCart
+  onClearCart,
+  currentUser
 }: CheckoutSectionProps) {
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -23,15 +25,31 @@ export default function CheckoutSection({
 
   // Shipping form state
   const [formData, setFormData] = useState({
-    customerName: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zip: '',
+    customerName: currentUser?.name || '',
+    email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
+    address: currentUser?.address || '',
+    city: currentUser?.city || '',
+    state: currentUser?.state || '',
+    zip: currentUser?.zip || '',
     gstNumber: ''
   });
+
+  // Autofill if currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      setFormData(prev => ({
+        ...prev,
+        customerName: prev.customerName || currentUser.name || '',
+        email: prev.email || currentUser.email || '',
+        phone: prev.phone || currentUser.phone || '',
+        address: prev.address || currentUser.address || '',
+        city: prev.city || currentUser.city || '',
+        state: prev.state || currentUser.state || '',
+        zip: prev.zip || currentUser.zip || '',
+      }));
+    }
+  }, [currentUser]);
 
   // Errors state
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -122,6 +140,7 @@ export default function CheckoutSection({
 
       const newOrder: Order = {
         id: orderId,
+        userId: currentUser?.id,
         customerName: formData.customerName,
         email: formData.email,
         phone: formData.phone,

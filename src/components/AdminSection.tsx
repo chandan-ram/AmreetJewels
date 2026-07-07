@@ -8,10 +8,10 @@ import {
   AlertCircle, ArrowRight, Trash2, ShieldAlert, UploadCloud, RefreshCw,
   Eye, MapPin, Mail, Phone, Calendar, X
 } from 'lucide-react';
-import { Product, Order, Coupon } from '../types';
+import { Product, Order, Coupon, User } from '../types';
 import { 
   getStoredProducts, saveProducts, getStoredOrders, saveOrders, 
-  getStoredCoupons, saveCoupons 
+  getStoredCoupons, saveCoupons, getStoredUsers, saveUsers
 } from '../lib/storage';
 import { CATEGORIES_LIST, OCCASIONS_LIST, COLORS_LIST } from '../data/initialData';
 
@@ -28,8 +28,9 @@ export default function AdminSection({
   orders,
   onOrdersUpdate
 }: AdminSectionProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'coupons'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'coupons' | 'buyers'>('dashboard');
   const [selectedInspectionOrder, setSelectedInspectionOrder] = useState<Order | null>(null);
+  const [buyers, setBuyers] = useState<User[]>(() => getStoredUsers());
 
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -357,11 +358,17 @@ export default function AdminSection({
             { id: 'dashboard', label: 'Dashboard Overview' },
             { id: 'products', label: 'Inventory Items' },
             { id: 'orders', label: 'Customer Orders' },
-            { id: 'coupons', label: 'Discount Coupons' }
+            { id: 'coupons', label: 'Discount Coupons' },
+            { id: 'buyers', label: 'Registered Buyers' }
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => {
+                setActiveTab(tab.id as any);
+                if (tab.id === 'buyers') {
+                  setBuyers(getStoredUsers());
+                }
+              }}
               className={`text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg border transition-all ${
                 activeTab === tab.id
                   ? 'bg-charcoal text-gold border-charcoal shadow-sm'
@@ -915,6 +922,113 @@ export default function AdminSection({
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* REGISTERED BUYERS TAB */}
+      {activeTab === 'buyers' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gold/10 pb-4 gap-2">
+            <div>
+              <h2 className="font-serif text-xl font-bold text-charcoal">Registered Buyers Directory</h2>
+              <p className="text-xs text-gray-400">View customer contact credentials, linked shipping addresses, and lifetime transaction value metrics.</p>
+            </div>
+            <div className="bg-gold/5 text-gold-dark text-xs font-bold border border-gold/15 px-3 py-1.5 rounded-lg shrink-0 self-start sm:self-auto">
+              Total Customers: {buyers.length}
+            </div>
+          </div>
+
+          <div className="bg-white border border-gold/10 rounded-2xl shadow-xs overflow-hidden">
+            {buyers.length === 0 ? (
+              <div className="text-center py-12 space-y-2">
+                <div className="flex justify-center text-gray-300">
+                  <Users size={48} className="stroke-1" />
+                </div>
+                <p className="font-serif text-base font-bold text-charcoal">No Registered Buyers Yet</p>
+                <p className="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed">When shoppers sign up for premium bridal checkout and save profiles, their contact registries will be indexed here.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-[#FAF7F3] border-b border-gold/10 text-charcoal uppercase tracking-wider font-bold">
+                      <th className="p-4 font-bold">Client Profile</th>
+                      <th className="p-4 font-bold">WhatsApp Contact</th>
+                      <th className="p-4 font-bold">Primary Delivery Address</th>
+                      <th className="p-4 font-bold text-center">Orders Count</th>
+                      <th className="p-4 font-bold text-right">Lifetime Spent</th>
+                      <th className="p-4 font-bold text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 font-medium text-charcoal">
+                    {buyers.map(buyer => {
+                      // Calculate order counts & total spent
+                      const buyerOrders = orders.filter(
+                        o => o.userId === buyer.id || o.email.toLowerCase() === buyer.email.toLowerCase()
+                      );
+                      const totalSpent = buyerOrders
+                        .filter(o => o.status !== 'Cancelled')
+                        .reduce((sum, o) => sum + o.totalAmount, 0);
+
+                      return (
+                        <tr key={buyer.id} className="hover:bg-beige-soft/5 transition-all">
+                          <td className="p-4">
+                            <div className="flex items-center space-x-2.5">
+                              <div className="p-2 bg-gold/10 text-gold-dark rounded-full shrink-0">
+                                <Users size={16} />
+                              </div>
+                              <div>
+                                <p className="font-bold text-charcoal text-sm">{buyer.name}</p>
+                                <p className="text-gray-400 font-mono text-[10px] mt-0.5">{buyer.email}</p>
+                                <p className="text-[9px] text-gray-400">Since: {new Date(buyer.createdAt).toLocaleDateString('en-IN')}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4 text-gray-600 font-semibold">
+                            <span className="flex items-center gap-1.5">
+                              <Phone size={12} className="text-gold shrink-0" />
+                              <span>{buyer.phone}</span>
+                            </span>
+                          </td>
+                          <td className="p-4 text-gray-500 max-w-xs truncate" title={buyer.address ? `${buyer.address}, ${buyer.city}, ${buyer.state} - ${buyer.zip}` : "No address"}>
+                            {buyer.address ? (
+                              <span className="flex items-start gap-1">
+                                <MapPin size={12} className="text-gold shrink-0 mt-0.5" />
+                                <span className="leading-relaxed text-[11px]">{buyer.address}, {buyer.city}, {buyer.state} - <span className="font-bold font-mono">{buyer.zip}</span></span>
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 italic">None saved yet</span>
+                            )}
+                          </td>
+                          <td className="p-4 text-center font-bold font-mono text-charcoal text-sm">
+                            {buyerOrders.length}
+                          </td>
+                          <td className="p-4 text-right font-bold text-gold-dark text-sm">
+                            ₹{totalSpent.toLocaleString('en-IN')}
+                          </td>
+                          <td className="p-4 text-center">
+                            <button
+                              onClick={() => {
+                                if (window.confirm("Are you sure you want to remove this client account? This will log them out and remove their saved contact/address directory.")) {
+                                  const updated = buyers.filter(b => b.id !== buyer.id);
+                                  saveUsers(updated);
+                                  setBuyers(updated);
+                                }
+                              }}
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
+                              title="Remove customer profile indices"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
